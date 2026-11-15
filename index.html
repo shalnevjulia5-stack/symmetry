@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>גלקסיית הכיתה שלנו - מנבט הכוכבים והסימטריה</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --secondary: #ec4899;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #cbd5e1;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1250px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #fff;
+        }
+
+        header h1 {
+            color: #fbbf24;
+            margin-bottom: 5px;
+            font-size: 2.4rem;
+            text-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+        }
+
+        header p {
+            color: #cbd5e1;
+            font-size: 1.1rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 25px;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Sidebar Controls */
+        .sidebar h2 {
+            font-size: 1.3rem;
+            margin-top: 0;
+            color: var(--primary);
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 10px;
+        }
+
+        .class-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .class-btn {
+            flex: 1;
+            min-width: 60px;
+            padding: 10px;
+            border: 2px solid var(--border);
+            background: #fff;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-muted);
+        }
+
+        .class-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+        .stats-box {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+
+        .stats-number {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: var(--warning);
+            margin: 5px 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .actions-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 12px 18px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: var(--text-main);
+        }
+        .btn-secondary:hover { background: #e2e8f0; }
+
+        /* Main Workspace */
+        .workspace {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            font-size: 1rem;
+            font-weight: bold;
+            padding: 8px 14px;
+            cursor: pointer;
+            color: var(--text-muted);
+            border-radius: 8px;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            background: #eff6ff;
+            color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Students List */
+        .students-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .students-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 12px;
+            max-height: 520px;
+            overflow-y: auto;
+            padding: 5px;
+        }
+
+        .student-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .student-card.absent {
+            opacity: 0.5;
+            background: #f8fafc;
+            border-style: dashed;
+        }
+
+        .student-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .attendance-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .student-name {
+            font-weight: 600;
+            font-size: 1rem;
+            flex: 1;
+            border: 1px solid transparent;
+            padding: 2px 6px;
+            border-radius: 6px;
+        }
+
+        .student-name:hover {
+            border-color: var(--border);
+            background: #f8fafc;
+        }
+
+        .student-name:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #fff;
+        }
+
+        .star-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .star-count {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--warning);
+            min-width: 24px;
+            text-align: center;
+        }
+
+        .star-btn {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            color: #d97706;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s;
+        }
+
+        .star-btn:active { transform: scale(0.9); }
+
+        .star-btn.minus {
+            background: #fee2e2;
+            border-color: #ef4444;
+            color: #dc2626;
+        }
+
+        /* Training Stages (Cadets) */
+        .training-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-height: 520px;
+            overflow-y: auto;
+            padding: 5px;
+        }
+
+        .cadet-row {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .cadet-details h4 {
+            margin: 0 0 5px 0;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .stages-badges {
+            display: flex;
+            gap: 8px;
+        }
+
+        .stage-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border: 1px solid #cbd5e1;
+            background: #f1f5f9;
+            color: var(--text-muted);
+        }
+
+        .stage-badge.completed {
+            background: #dcfce7;
+            border-color: #22c55e;
+            color: #15803d;
+        }
+
+        .certified-badge {
+            background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            box-shadow: 0 2px 6px rgba(217, 119, 6, 0.3);
+        }
+
+        /* Symmetry Canvas Arena */
+        .symmetry-arena {
+            text-align: center;
+            position: relative;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            max-width: 580px;
+            height: 380px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: inset 0 4px 12px rgba(0,0,0,0.4);
+            border: 2px solid #334155;
+            cursor: crosshair;
+        }
+
+        .symmetry-axis {
+            position: absolute;
+            top: 0; bottom: 0; left: 50%;
+            width: 2px;
+            background: rgba(236, 72, 153, 0.7);
+            box-shadow: 0 0 8px var(--secondary);
+            pointer-events: none;
+        }
+
+        .symmetry-axis-h {
+            position: absolute;
+            left: 0; right: 0; top: 50%;
+            height: 2px;
+            background: rgba(99, 102, 241, 0.7);
+            box-shadow: 0 0 8px var(--primary);
+            pointer-events: none;
+        }
+
+        .floating-star {
+            position: absolute;
+            font-size: 26px;
+            transform: translate(-50%, -50%);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            user-select: none;
+            filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.8));
+        }
+
+        @keyframes popIn {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .arena-instructions {
+            margin-top: 12px;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* Add cadet row */
+        .add-student-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .add-student-input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+        .add-student-input:focus { outline: none; border-color: var(--primary); }
+
+        .badge {
+            background: #e0e7ff;
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>🌌 גלקסיית הכיתה שלנו</h1>
+        <p>הכשרה גלקטית רשמית בשילוב סימטריה בטבע ומנבט כוכבים לכיתות ה'</p>
+    </header>
+
+    <div class="dashboard-grid">
+        <!-- Sidebar Controls -->
+        <div class="card sidebar">
+            <h2>בחר כיתה</h2>
+            <div class="class-selector">
+                <button class="class-btn active" onclick="switchClass('ה1')">ה' 1</button>
+                <button class="class-btn" onclick="switchClass('ה2')">ה' 2</button>
+                <button class="class-btn" onclick="switchClass('ה3')">ה' 3</button>
+                <button class="class-btn" onclick="switchClass('ה4')">ה' 4</button>
+            </div>
+
+            <div class="stats-box">
+                <div>סה״כ כוכבים שחולקו בכיתה</div>
+                <div class="stats-number" id="totalStarsCount">0 / 25</div>
+                <div style="font-size: 0.9rem; color: var(--text-muted);" id="presentCountText">צוערים נוכחים: 0</div>
+            </div>
+
+            <div class="actions-group">
+                <button class="btn btn-primary" onclick="triggerCelebration()">
+                    🎉 חגיגת שליחים גלקסיים
+                </button>
+                <button class="btn btn-secondary" onclick="resetClassStars()">
+                    🔄 איפוס כוכבים לכיתה זו
+                </button>
+                <button class="btn btn-secondary" onclick="exportData()">
+                    📤 ייצוא נתונים
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content Workspace -->
+        <div class="card workspace">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('students')">👥 ניהול צוערים ונוכחות</button>
+                <button class="tab-btn" onclick="switchTab('training')">🚀 מעקב השלבי הכשרה</button>
+                <button class="tab-btn" onclick="switchTab('symmetry')">✨ לוח קונסטלציית הסימטריה</button>
+            </div>
+
+            <!-- Tab 1: Students & Attendance -->
+            <div id="tab-students" class="tab-content active">
+                <div class="students-header">
+                    <div>
+                        <strong id="currentClassNameTitle" style="font-size: 1.2rem; color: var(--primary);">כיתה ה' 1</strong>
+                        <span class="badge" id="studentCountBadge">0 צוערים</span>
+                    </div>
+                </div>
+
+                <div class="add-student-row">
+                    <input type="text" id="newStudentNameInput" class="add-student-input" placeholder="שם צוער/ת חדש/ה...">
+                    <button class="btn btn-primary" onclick="addNewStudent()">➕ הוסף צוער</button>
+                </div>
+                <br>
+
+                <div class="students-grid" id="studentsGrid">
+                    <!-- Dynamic Student Cards -->
+                </div>
+            </div>
+
+            <!-- Tab 2: Training Stages -->
+            <div id="tab-training" class="tab-content">
+                <div style="margin-bottom: 12px; color: var(--text-muted); font-size: 0.95rem;">
+                    כל צוער עובר 3 שלבי הכשרה: <strong>פאיציק</strong>, <strong>אפסילון</strong> ו<strong>יוטה</strong>. עם צבירת 3 כוכבים ומעלה, הצוער הופך רשמית לשליח גלקטי מן המניין!
+                </div>
+                <div class="training-container" id="trainingContainer">
+                    <!-- Dynamic Training Rows -->
+                </div>
+            </div>
+
+            <!-- Tab 3: Symmetry Arena -->
+            <div id="tab-symmetry" class="tab-content">
+                <div class="symmetry-arena">
+                    <h3 style="margin-top:0; color: var(--primary);">לוח קונסטלציית הסימטריה הגלקטית</h3>
+                    <div class="canvas-container" id="symmetryCanvas" onclick="placeSymmetricStar(event)">
+                        <div class="symmetry-axis"></div>
+                        <div class="symmetry-axis-h"></div>
+                    </div>
+                    <div class="arena-instructions">
+                        לחץ על הלוח כדי למקם כוכב. המערכת יוצרת אוטומטית שיקוף מושלם ב-4 כיוונים (סימטריה רדיאלית ושיקופית)!
+                    </div>
+                    <button class="btn btn-secondary" style="margin: 15px auto 0 auto;" onclick="clearSymmetryCanvas()">נקה לוח כוכבים</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const defaultClasses = {
+        'ה1': [
+            "רומי בוקאי", "אמיתי בן דוד", "עידו גוברין", "ינאי גזית", "אייל גרנות",
+            "אורי דוד ששון", "לביא חי ונסובר", "אורי זומר", "גבע כהן", "תמר מלכה",
+            "אופק מנור", "דניאל מרטין", "עופרי נצר", "נדב פיטרשו", "מאיה שרה פייפמן",
+            "להב קורן", "שאולי רז", "איתן שושני", "אורי שטראי", "עופר שטרנליכט", "תומר שטרסברג"
+        ],
+        'ה2': [
+            "ליבי אורנשטיין", "לביא בושנסקי", "איתן בלאוט", "איתן בן דוד", "נועם בר און",
+            "ארבל בריפמן", "נדב ברנץ", "בן דריאל", "הדר הרשליקוביץ", "ליאור חכם",
+            "מעוז יהודה", "יובל כהן", "פלג לרר", "טום מזרחי", "אוהד פיבין",
+            "אריאל פריג", "פלג פרידלנד", "איתי צרפתי", "שחר קירש", "אריק שינקרבסקי",
+            "רומי שמואלי", "הגר תורגמן"
+        ],
+        'ה3': ["צוער 1", "צוער 2", "צוער 3", "צוער 4", "צוער 5"],
+        'ה4': ["צוער 1", "צוער 2", "צוער 3", "צוער 4", "צוער 5"]
+    };
+
+    let schoolData = JSON.parse(localStorage.getItem('galaxy_school_data')) || {};
+
+    Object.keys(defaultClasses).forEach(cls => {
+        if (!schoolData[cls]) {
+            schoolData[cls] = {
+                students: defaultClasses[cls].map(name => ({ name, present: true, stars: 0 })),
+                canvasStars: []
+            };
+        } else {
+            schoolData[cls].students = schoolData[cls].students.map(s => typeof s === 'string' ? {name: s, present: true, stars: 0} : s);
+            if(!schoolData[cls].canvasStars) schoolData[cls].canvasStars = [];
+        }
+    });
+
+    let currentClass = 'ה1';
+
+    function saveData() {
+        localStorage.setItem('galaxy_school_data', JSON.stringify(schoolData));
+    }
+
+    function switchClass(cls) {
+        currentClass = cls;
+        document.querySelectorAll('.class-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.textContent.includes(cls.replace('ה', "ה' ")));
+        });
+        document.getElementById('currentClassNameTitle').textContent = `כיתה ${cls.replace('ה', "ה' ")}`;
+        renderStudents();
+        renderTraining();
+        renderSymmetryCanvas();
+        updateStats();
+    }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        
+        if(tabId === 'students') {
+            document.querySelector('.tabs button:nth-child(1)').classList.add('active');
+            document.getElementById('tab-students').classList.add('active');
+        } else if(tabId === 'training') {
+            document.querySelector('.tabs button:nth-child(2)').classList.add('active');
+            document.getElementById('tab-training').classList.add('active');
+            renderTraining();
+        } else {
+            document.querySelector('.tabs button:nth-child(3)').classList.add('active');
+            document.getElementById('tab-symmetry').classList.add('active');
+            renderSymmetryCanvas();
+        }
+    }
+
+    function renderStudents() {
+        const grid = document.getElementById('studentsGrid');
+        grid.innerHTML = '';
+        const students = schoolData[currentClass].students;
+        
+        document.getElementById('studentCountBadge').textContent = `${students.length} צוערים`;
+
+        students.forEach((student, index) => {
+            const card = document.createElement('div');
+            card.className = `student-card ${student.present ? '' : 'absent'}`;
+            
+            card.innerHTML = `
+                <div class="student-info">
+                    <input type="checkbox" class="attendance-checkbox" ${student.present ? 'checked' : ''} onchange="toggleAttendance(${index})" title="נוכח/ת בשיעור">
+                    <input type="text" class="student-name" value="${student.name}" onblur="updateStudentName(${index}, this.value)" title="לחץ לעריכת שם">
+                </div>
+                <div class="star-controls">
+                    <button class="star-btn minus" onclick="adjustStars(${index}, -1)">-</button>
+                    <span class="star-count">${student.stars}</span>
+                    <button class="star-btn" onclick="adjustStars(${index}, 1)">⭐</button>
+                    <button class="star-btn minus" onclick="deleteStudent(${index})" title="מחק צוער" style="background:#f3f4f6; border-color:#9ca3af; color:#4b5563; font-size:0.75rem;">🗑️</button>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+        updateStats();
+    }
+
+    function renderTraining() {
+        const container = document.getElementById('trainingContainer');
+        container.innerHTML = '';
+        const students = schoolData[currentClass].students;
+
+        students.forEach(student => {
+            const stars = student.stars;
+            const piDone = stars >= 1;
+            const epsDone = stars >= 2;
+            const iotaDone = stars >= 3;
+            const certified = stars >= 3;
+
+            const row = document.createElement('div');
+            row.className = 'cadet-row';
+            row.innerHTML = `
+                <div class="cadet-details">
+                    <h4>${student.name}</h4>
+                    <div style="font-size:0.85rem; color:var(--text-muted);">כוכבים שנצברו: ${stars}</div>
+                </div>
+                <div class="stages-badges">
+                    <span class="stage-badge ${piDone ? 'completed' : ''}">1. פאיציק ${piDone ? '✓' : ''}</span>
+                    <span class="stage-badge ${epsDone ? 'completed' : ''}">2. אפסילון ${epsDone ? '✓' : ''}</span>
+                    <span class="stage-badge ${iotaDone ? 'completed' : ''}">3. יוטה ${iotaDone ? '✓' : ''}</span>
+                    ${certified ? '<span class="certified-badge">🌟 שליח גלקטי רשמי</span>' : '<span class="stage-badge">בהכשרה</span>'}
+                </div>
+            `;
+            container.appendChild(row);
+        });
+    }
+
+    function toggleAttendance(index) {
+        schoolData[currentClass].students[index].present = !schoolData[currentClass].students[index].present;
+        saveData();
+        renderStudents();
+    }
+
+    function updateStudentName(index, newName) {
+        if(newName.trim()) {
+            schoolData[currentClass].students[index].name = newName.trim();
+            saveData();
+        }
+    }
+
+    function addNewStudent() {
+        const input = document.getElementById('newStudentNameInput');
+        const name = input.value.trim();
+        if(name) {
+            schoolData[currentClass].students.push({ name, present: true, stars: 0 });
+            input.value = '';
+            saveData();
+            renderStudents();
+        }
+    }
+
+    function deleteStudent(index) {
+        if(confirm("האם למחוק את הצוער מהרשימה?")) {
+            schoolData[currentClass].students.splice(index, 1);
+            saveData();
+            renderStudents();
+        }
+    }
+
+    function adjustStars(index, amount) {
+        const student = schoolData[currentClass].students[index];
+        student.stars = Math.max(0, student.stars + amount);
+        saveData();
+        renderStudents();
+        renderTraining();
+        if(amount > 0) {
+            triggerConfetti();
+        }
+    }
+
+    function updateStats() {
+        const students = schoolData[currentClass].students;
+        const totalStars = students.reduce((sum, s) => sum + s.stars, 0);
+        const presentCount = students.filter(s => s.present).length;
+
+        document.getElementById('totalStarsCount').textContent = `${totalStars} / 25`;
+        document.getElementById('presentCountText').textContent = `צוערים נוכחים: ${presentCount} מתוך ${students.length}`;
+    }
+
+    function resetClassStars() {
+        if(confirm("האם לאפס את כל כוכבי הצוערים בכיתה זו?")) {
+            schoolData[currentClass].students.forEach(s => s.stars = 0);
+            schoolData[currentClass].canvasStars = [];
+            saveData();
+            renderStudents();
+            renderTraining();
+            renderSymmetryCanvas();
+        }
+    }
+
+    // Symmetry Canvas Logic
+    function placeSymmetricStar(event) {
+        const container = document.getElementById('symmetryCanvas');
+        const rect = container.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        const width = rect.width;
+        const height = rect.height;
+
+        const cx = width / 2;
+        const cy = height / 2;
+
+        const relX = x - cx;
+        const relY = y - cy;
+
+        const points = [
+            { x: cx + relX, y: cy + relY },
+            { x: cx - relX, y: cy + relY },
+            { x: cx + relX, y: cy - relY },
+            { x: cx - relX, y: cy - relY }
+        ];
+
+        const uniquePoints = [];
+        points.forEach(p => {
+            if(p.x >= 0 && p.x <= width && p.y >= 0 && p.y <= height) {
+                if(!uniquePoints.some(up => Math.hypot(up.x - p.x, up.y - p.y) < 10)) {
+                    uniquePoints.push(p);
+                }
+            }
+        });
+
+        schoolData[currentClass].canvasStars.push(...uniquePoints);
+        saveData();
+        renderSymmetryCanvas();
+        triggerConfetti();
+    }
+
+    function renderSymmetryCanvas() {
+        const container = document.getElementById('symmetryCanvas');
+        const axesHTML = `
+            <div class="symmetry-axis"></div>
+            <div class="symmetry-axis-h"></div>
+        `;
+        const starsHTML = (schoolData[currentClass].canvasStars || []).map(star => `
+            <div class="floating-star" style="left: ${star.x}px; top: ${star.y}px;">⭐</div>
+        `).join('');
+
+        container.innerHTML = axesHTML + starsHTML;
+    }
+
+    function clearSymmetryCanvas() {
+        schoolData[currentClass].canvasStars = [];
+        saveData();
+        renderSymmetryCanvas();
+    }
+
+    function triggerCelebration() {
+        confetti({
+            particleCount: 150,
+            spread: 90,
+            origin: { y: 0.6 }
+        });
+    }
+
+    function triggerConfetti() {
+        confetti({
+            particleCount: 40,
+            spread: 60,
+            origin: { y: 0.7 }
+        });
+    }
+
+    function exportData() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(schoolData, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "galaxy_class_data.json");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
+
+    renderStudents();
+    renderTraining();
+    renderSymmetryCanvas();
+</script>
+
+</body>
+</html>
